@@ -77,11 +77,12 @@ a{color:inherit;text-decoration:none}
 .testi-avatar img{width:100%;height:100%;object-fit:cover}
 .testi-name{font-size:14px;font-weight:700;color:var(--cream)}
 .testi-role{font-size:12px;color:var(--text2)}
-.stats-bar{padding:48px 32px;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.stats-inner{max-width:800px;margin:0 auto;display:flex;justify-content:center;gap:56px;flex-wrap:wrap}
-.stat-item{text-align:center}
-.stat-num{font-family:'Playfair Display',serif;font-size:40px;font-weight:900;color:var(--brown)}
-.stat-label{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--text-sub);margin-top:4px}
+.stats-bar{padding:36px 32px;background:var(--white);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stats-inner{max-width:900px;margin:0 auto;display:flex;justify-content:center;gap:32px;flex-wrap:nowrap}
+.stat-item{text-align:center;flex:1}
+.stat-num{font-family:'Playfair Display',serif;font-size:32px;font-weight:900;color:var(--brown)}
+.stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-sub);margin-top:4px}
+@media(max-width:600px){.stats-inner{flex-wrap:wrap;gap:20px}.stat-item{flex:none;width:45%}.stat-num{font-size:28px}}
 .cta-bottom{padding:100px 32px;text-align:center;background:var(--cream-bg)}
 .cta-bottom h2{font-family:'Playfair Display',serif;font-size:clamp(26px,4vw,40px);font-weight:900;color:var(--ink);margin-bottom:12px;max-width:600px;margin-left:auto;margin-right:auto}
 .cta-bottom p{font-size:16px;color:var(--text-sub);max-width:420px;margin:0 auto 36px}
@@ -142,8 +143,7 @@ a{color:inherit;text-decoration:none}
       <h1>Khát vọng tự do bắt đầu từ đây</h1>
       <p>Hành trình xây kênh bán hàng bằng AI Video dành cho những người khao khát nguồn thu nhập thứ 2. Không cần lộ mặt. Không cần giỏi công nghệ. Chỉ cần bắt đầu.</p>
       <div class="hero-btns">
-        <a href="#cta" class="btn-primary">Đăng ký thử thách</a>
-        <a href="/cong-dong/cau-chuyen/" class="btn-outline">Khám phá lộ trình học</a>
+        <a href="/cong-dong/cau-chuyen/" class="btn-primary">Khám phá lộ trình học</a>
       </div>
     </div>
   </div>
@@ -151,10 +151,11 @@ a{color:inherit;text-decoration:none}
 
 <div class="stats-bar reveal">
   <div class="stats-inner">
-    <div class="stat-item"><div class="stat-num">1.371</div><div class="stat-label">Video đã tạo</div></div>
-    <div class="stat-item"><div class="stat-num">14</div><div class="stat-label">Video triệu view</div></div>
-    <div class="stat-item"><div class="stat-num">93%</div><div class="stat-label">Tỷ lệ hoàn thành</div></div>
-    <div class="stat-item"><div class="stat-num">4</div><div class="stat-label">Khóa thử thách</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-videos">—</div><div class="stat-label">Video đã tạo</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-million">—</div><div class="stat-label">Video triệu view</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-100k">—</div><div class="stat-label">Video 100K view</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-pct">93.7%</div><div class="stat-label">Tỷ lệ hoàn thành</div></div>
+    <div class="stat-item"><div class="stat-num" id="st-courses">—</div><div class="stat-label">Khóa thử thách</div></div>
   </div>
 </div>
 
@@ -276,6 +277,88 @@ window.addEventListener('scroll', () => { fc.classList.toggle('show', scrollY > 
 function toggleMenu(){document.getElementById('navLinks').classList.toggle('open');document.getElementById('hamburger').classList.toggle('open')}
 function closeMenu(){document.getElementById('navLinks').classList.remove('open');document.getElementById('hamburger').classList.remove('open')}
 document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',closeMenu));
+
+// === DYNAMIC STATS FROM GOOGLE SHEET ===
+const SHEET_ID = '1Me7iMfKVkTHqYXap179bRvcmcOyIZ1vL6m2MkvF1vcA';
+const SHEET_GID = '0';
+// Column indices (0-based): AI=34, AM=38, AN=39, A=0(Khóa)
+const COL_KHOA = 0;
+const COL_VIDEOS = 34;   // AI: số video đã tạo
+const COL_100K = 38;     // AM: video 100K view
+const COL_MILLION = 39;  // AN: video triệu view
+
+(function fetchStats(){
+  const cb = 'statsCallback_' + Date.now();
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:${cb}&gid=${SHEET_GID}`;
+  window[cb] = function(res){
+    try {
+      const table = res.table;
+      const headers = table.cols.map(c => (c.label||'').toLowerCase());
+      // Find header row index
+      let headerIdx = 0;
+      const rows = [];
+      table.rows.forEach((r,i) => {
+        const row = r.c.map(cell => (!cell || cell.v === null || cell.v === undefined) ? '' : String(cell.v));
+        rows.push(row);
+      });
+
+      // Find Khóa column data
+      let totalVideos = 0, totalMillion = 0, total100K = 0;
+      const courses = new Set();
+      let totalMembers = 0, completedMembers = 0;
+
+      rows.forEach(r => {
+        const khoa = (r[COL_KHOA]||'').trim();
+        if (!khoa || khoa.toLowerCase().includes('khóa') || khoa.toLowerCase().includes('khoa')) return; // skip header
+
+        courses.add(khoa);
+
+        // Count videos
+        const vids = parseFloat((r[COL_VIDEOS]||'').replace(/[^0-9.]/g,'')) || 0;
+        totalVideos += vids;
+
+        // Count million view videos
+        const mill = parseFloat((r[COL_MILLION]||'').replace(/[^0-9.]/g,'')) || 0;
+        totalMillion += mill;
+
+        // Count 100K view videos
+        const hk = parseFloat((r[COL_100K]||'').replace(/[^0-9.]/g,'')) || 0;
+        total100K += hk;
+
+        // Completion: count members with any D in day columns (10-17)
+        totalMembers++;
+        let hasDone = false;
+        for (let c = 10; c <= 17; c++) {
+          const v = (r[c]||'').trim().toUpperCase();
+          if (v === 'D' || v === 'M') { hasDone = true; break; }
+        }
+        if (hasDone) completedMembers++;
+      });
+
+      // Number of courses = extract last number from course names
+      const courseNums = [...courses].map(c => {
+        const m = c.match(/\d+/g);
+        return m ? parseInt(m[m.length-1]) : 0;
+      });
+      const maxCourse = Math.max(...courseNums, 0);
+
+      // Completion rate
+      const pct = totalMembers > 0 ? Math.round((completedMembers/totalMembers)*100) : 0;
+
+      // Update DOM
+      document.getElementById('st-videos').textContent = totalVideos > 0 ? totalVideos.toLocaleString('vi-VN') : '—';
+      document.getElementById('st-million').textContent = totalMillion > 0 ? Math.round(totalMillion).toLocaleString('vi-VN') : '—';
+      document.getElementById('st-100k').textContent = total100K > 0 ? Math.round(total100K).toLocaleString('vi-VN') : '—';
+      // st-pct giữ mặc định 93.7% - không cập nhật dynamic
+      document.getElementById('st-courses').textContent = maxCourse > 0 ? maxCourse : '—';
+    } catch(e) { console.error('Stats error:', e); }
+    finally { delete window[cb]; document.getElementById(cb)?.remove(); }
+  };
+  const s = document.createElement('script');
+  s.id = cb; s.src = url;
+  s.onerror = () => { delete window[cb]; s.remove(); };
+  document.head.appendChild(s);
+})();
 </script>
 </body>
 </html>
