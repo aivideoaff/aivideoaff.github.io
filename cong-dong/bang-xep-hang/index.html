@@ -345,6 +345,7 @@ const COL = {
   LINK_KENH: 9,  // J: Link kênh
   NGAY_START: 10, // K: Ngày 1 (D/M/C)
   VIEW: 35,      // AJ: Lượng view cao nhất
+  VAITRO: 41,    // AP: Vai trò (Trưởng nhóm / Thành viên)
 };
 
 // Find "Tổng kết cuối khóa" column dynamically
@@ -585,8 +586,8 @@ function renderGroupFilters() {
 
   // Populate rank course filter
   const courses = [...new Set(ALL_DATA.map(r => r[COL.KHOA]).filter(Boolean))].sort();
-  const courseOpts = courses.map(c => `<option value="${c}"${c===CURRENT_COURSE?' selected':''}>${c}</option>`).join('');
-  document.getElementById('f-rank-course').innerHTML = `<option value="">Tất cả khóa</option>${courseOpts}`;
+  const courseOpts = courses.map(c => `<option value="${c}">${c}</option>`).join('');
+  document.getElementById('f-rank-course').innerHTML = `<option value="" selected>Tất cả khóa</option>${courseOpts}`;
 }
 
 function getCompletionPct(row) {
@@ -768,42 +769,77 @@ function renderRankTable() {
   const course = document.getElementById('f-rank-course').value;
   const search = (document.getElementById('f-rank-search').value || '').toLowerCase();
 
-  // Filter by course (use rank-specific course, not global)
-  let data = course ? ALL_DATA.filter(r => r[COL.KHOA] === course) : filtered();
-  if (group) data = data.filter(r => r[COL.NHOM] === group);
+  // Disable/enable group filter based on type
+  const groupSelect = document.getElementById('f-rank-group');
+  if (type === 'team') {
+    groupSelect.value = '';
+    groupSelect.disabled = true;
+    groupSelect.style.opacity = '0.4';
+  } else {
+    groupSelect.disabled = false;
+    groupSelect.style.opacity = '1';
+  }
+
+  // Use ALL data by default, filter by course only if selected
+  let data = course ? ALL_DATA.filter(r => r[COL.KHOA] === course) : [...ALL_DATA];
+  if (type !== 'team' && group) data = data.filter(r => r[COL.NHOM] === group);
   if (search) data = data.filter(r => (r[COL.TEN]||'').toLowerCase().includes(search) || (r[COL.SKOOL]||'').toLowerCase().includes(search));
 
   if (type === 'team') {
-    // Group by nhóm
-    const groups = {};
+    // Group by KHOA + NHOM (each course's group is separate)
+    const teamMap = {};
     data.forEach(r => {
-      const g = r[COL.NHOM] || 'Không nhóm';
-      if (!groups[g]) groups[g] = { members: [], totalPct: 0 };
-      groups[g].members.push(r);
-      groups[g].totalPct += getCompletionPct(r);
+      const khoa = r[COL.KHOA] || '';
+      const nhom = r[COL.NHOM] || 'Không nhóm';
+      const key = khoa + '|||' + nhom;
+      if (!teamMap[key]) teamMap[key] = { khoa, nhom, members: [], leader: null };
+      teamMap[key].members.push(r);
+      // Find trưởng nhóm
+      const vaitro = (r[COL.VAITRO] || '').toLowerCase();
+      if (vaitro.includes('trưởng') || vaitro.includes('truong')) {
+        teamMap[key].leader = r;
+      }
     });
-    let teamStats = Object.entries(groups).map(([name, g]) => ({
-      name,
-      count: g.members.length,
-      avgPct: Math.round(g.totalPct / g.members.length),
-      totalDone: g.members.reduce((s, r) => s + getDaysDone(r), 0)
-    }));
-    teamStats.sort((a, b) => sort === 'asc' ? a.avgPct - b.avgPct : b.avgPct - a.avgPct);
+
+    let teamStats = Object.values(teamMap).map(t => {
+      const totalView = t.members.reduce((s, r) => s + getView(r), 0);
+      const avgView = Math.round(totalView / t.members.length);
+      return {
+        khoa: t.khoa,
+        nhom: t.nhom,
+        count: t.members.length,
+        avgView,
+        leader: t.leader
+      };
+    });
+
+    // Sort by view
+    teamStats.sort((a, b) => sort === 'asc' ? a.avgView - b.avgView : b.avgView - a.avgView);
 
     let html = `<table class="data-table"><thead><tr>
-      <th style="width:50px">Hạng</th><th>Nhóm</th><th>Thành viên</th><th>Hiệu suất TB</th><th>Tổng bài nộp</th>
+      <th style="width:50px">Hạng</th><th>Nhóm</th><th>Trưởng nhóm</th><th>Số lượng tham gia</th><th>View trung bình</th><th>Khóa</th>
     </tr></thead><tbody>`;
 
     teamStats.forEach((t, i) => {
       const rank = i + 1;
       const rankClass = rank <= 3 ? `rank-${rank}` : 'rank-other';
-      const pctClass = t.avgPct >= 80 ? 'pct-high' : t.avgPct >= 50 ? 'pct-mid' : 'pct-low';
+      const viewClass = t.avgView >= 100000 ? 'pct-high' : t.avgView >= 10000 ? 'pct-mid' : 'pct-low';
+
+      // Leader info
+      let leaderHTML = '—';
+      if (t.leader) {
+        const lName = t.leader[COL.TEN] || '';
+        const lAvatar = t.leader[COL.AVATAR] || '';
+        leaderHTML = `<div class="member-cell">${avatarHTML(lAvatar, lName)}<div><div class="member-name">${reverseName(lName)}</div></div></div>`;
+      }
+
       html += `<tr>
         <td><div class="rank-badge ${rankClass}">#${String(rank).padStart(2,'0')}</div></td>
-        <td><strong>${t.name.toUpperCase()}</strong></td>
-        <td>${t.count} người</td>
-        <td><span class="pct ${pctClass}">${t.avgPct}%</span></td>
-        <td>${t.totalDone}</td>
+        <td><strong>${t.nhom.toUpperCase()}</strong><div style="font-size:10px;color:var(--text2);margin-top:2px">NHÓM</div></td>
+        <td>${leaderHTML}</td>
+        <td style="text-align:center"><span style="color:var(--gold);font-weight:700;font-size:16px">${t.count}</span></td>
+        <td><span class="pct ${viewClass}" style="font-size:16px">${formatView(t.avgView)}</span></td>
+        <td>${t.khoa}</td>
       </tr>`;
     });
     html += '</tbody></table>';
@@ -811,7 +847,7 @@ function renderRankTable() {
     return;
   }
 
-  // Individual - sort by view
+  // Individual - sort by view, use ALL data
   const sorted = [...data].sort((a, b) => {
     const diff = getView(b) - getView(a);
     return sort === 'asc' ? -diff : diff;
