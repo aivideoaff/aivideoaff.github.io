@@ -103,18 +103,17 @@ a{color:inherit;text-decoration:none}
 
 /* DATA TABLE */
 .table-scroll{overflow-x:auto;overflow-y:auto;max-height:520px;-webkit-overflow-scrolling:touch;border:1px solid var(--border);border-radius:4px}
-.table-scroll thead th{position:sticky;top:0;background:var(--bg);z-index:3;box-shadow:0 1px 0 var(--border2)}
+.table-scroll thead th{position:sticky;top:0;background:var(--bg);z-index:5;box-shadow:0 1px 0 var(--border2)}
 .data-table{width:100%;border-collapse:separate;border-spacing:0;min-width:600px}
 .data-table th{text-align:left;font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text2);padding:10px 12px;border-bottom:1px solid var(--border2);white-space:nowrap}
 .data-table td{padding:12px 12px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;white-space:nowrap}
 .data-table tbody tr{transition:background .2s}
 .data-table tbody tr:hover{background:var(--cream03)}
-/* Sticky first 3 columns */
-.data-table th:nth-child(1),.data-table td:nth-child(1){position:sticky;left:0;background:var(--bg);z-index:2}
-.data-table th:nth-child(2),.data-table td:nth-child(2){position:sticky;left:200px;background:var(--bg);z-index:2}
-.data-table th:nth-child(3),.data-table td:nth-child(3){position:sticky;left:320px;background:var(--bg);z-index:2}
-.data-table thead th:nth-child(1),.data-table thead th:nth-child(2),.data-table thead th:nth-child(3){z-index:4}
-.data-table tbody tr:hover td:nth-child(1),.data-table tbody tr:hover td:nth-child(2),.data-table tbody tr:hover td:nth-child(3){background:var(--cream03)}
+/* Sticky columns for detail table */
+.detail-table .sticky-col{position:sticky;background:var(--bg);z-index:3}
+.detail-table thead .sticky-col{z-index:6;background:var(--bg)}
+.detail-table .sticky-col::after{content:'';position:absolute;top:0;bottom:0;right:-1px;width:1px;background:var(--border2)}
+.detail-table tbody tr:hover .sticky-col{background:var(--bg3)}
 
 /* MEMBER CELL */
 .member-cell{display:flex;align-items:center;gap:10px;min-width:180px}
@@ -704,8 +703,8 @@ function renderDetailTable() {
     return `<th>${label}</th>`;
   }).join('');
 
-  let html = `<table class="data-table"><thead><tr>
-    <th>Thành viên</th><th>Nhóm</th><th>Tổng kết bài tập</th>${dayHeaders}
+  let html = `<table class="data-table detail-table"><thead><tr>
+    <th class="sticky-col" style="left:0;min-width:200px">Thành viên</th><th class="sticky-col" style="left:200px;min-width:120px">Nhóm</th><th class="sticky-col" style="left:320px;min-width:100px">Tổng kết bài tập</th>${dayHeaders}
   </tr></thead><tbody>`;
 
   data.forEach(r => {
@@ -730,9 +729,9 @@ function renderDetailTable() {
     const pctClass = pct >= 80 ? 'pct-high' : pct >= 50 ? 'pct-mid' : 'pct-low';
 
     html += `<tr>
-      <td><div class="member-cell">${avatarHTML(avatar, name)}<div><div class="member-name">${name.toUpperCase()}</div><div class="member-skool">${skool}</div></div></div></td>
-      <td>${nhom}</td>
-      <td><span class="pct ${pctClass}">${pct}%</span></td>
+      <td class="sticky-col" style="left:0"><div class="member-cell">${avatarHTML(avatar, name)}<div><div class="member-name">${name.toUpperCase()}</div><div class="member-skool">${skool}</div></div></div></td>
+      <td class="sticky-col" style="left:200px">${nhom}</td>
+      <td class="sticky-col" style="left:320px"><span class="pct ${pctClass}">${pct}%</span></td>
       ${dayCells}
     </tr>`;
   });
