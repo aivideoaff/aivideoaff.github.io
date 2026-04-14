@@ -336,6 +336,8 @@ let COL_TONGKET = -1;
 let COL_VIEW = -1;
 let HEADER_ROW = [];
 let DAY_COLS = [];
+let TOTAL_CHALLENGE_DAYS = 19; // Default, will be read from AQ2 (index 42)
+const COL_AQ = 42; // AQ column = index 42
 
 function driveThumb(url) {
   if (!url) return '';
@@ -479,6 +481,14 @@ async function fetchData() {
 
     ALL_DATA = rows.slice(headerIdx + 1).filter(r => r[COL.TEN] && r[COL.KHOA]);
 
+    // Read TOTAL_CHALLENGE_DAYS from AQ2 (row 2 in sheet = index 1 in rows array, before filtering)
+    // AQ2 is in the raw rows, row index 1 (second row), column 42
+    for (let i = 0; i < Math.min(rows.length, 5); i++) {
+      const val = parseFloat((rows[i][COL_AQ] || '').toString().replace(/[^0-9.]/g, ''));
+      if (val > 0) { TOTAL_CHALLENGE_DAYS = val; break; }
+    }
+    console.log('TOTAL_CHALLENGE_DAYS:', TOTAL_CHALLENGE_DAYS);
+
     // Find courses
     const courses = [...new Set(ALL_DATA.map(r => r[COL.KHOA]).filter(Boolean))].sort();
     CURRENT_COURSE = courses[courses.length - 1] || '';
@@ -556,36 +566,28 @@ function renderGroupFilters() {
 }
 
 function getCompletionPct(row) {
-  if (COL_TONGKET >= 0 && row[COL_TONGKET]) {
-    const v = row[COL_TONGKET].replace('%','').trim();
-    if (!isNaN(v) && v !== '') return parseInt(v);
-  }
-  // Fallback: calculate from day columns
-  let total = 0, done = 0;
+  // Count only Đ (Đã nộp đúng hạn), divide by TOTAL_CHALLENGE_DAYS (from AQ2), round UP
+  let doneCount = 0;
   DAY_COLS.forEach(c => {
     const v = (row[c]||'').trim().toUpperCase();
-    if (v === 'D' || v === 'M') { done++; total++; }
-    else if (v === 'C') { total++; }
+    if (v === 'D' || v === 'Đ') doneCount++;
   });
-  return total > 0 ? Math.round((done/total)*100) : 0;
+  if (TOTAL_CHALLENGE_DAYS <= 0) return 0;
+  return Math.ceil((doneCount / TOTAL_CHALLENGE_DAYS) * 100);
 }
 
 function getDaysDone(row) {
+  // Count only Đ
   let done = 0;
   DAY_COLS.forEach(c => {
     const v = (row[c]||'').trim().toUpperCase();
-    if (v === 'D' || v === 'M') done++;
+    if (v === 'D' || v === 'Đ') done++;
   });
   return done;
 }
 
 function getTotalDays(row) {
-  let total = 0;
-  DAY_COLS.forEach(c => {
-    const v = (row[c]||'').trim().toUpperCase();
-    if (v === 'D' || v === 'M' || v === 'C') total++;
-  });
-  return total;
+  return TOTAL_CHALLENGE_DAYS;
 }
 
 // PODIUM
