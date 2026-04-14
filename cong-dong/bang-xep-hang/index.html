@@ -342,8 +342,8 @@ const COL = {
   SKOOL: 6,      // G: ID Skool
   LINK_FB: 7,    // H: Link fb
   TEN_KENH: 8,   // I: Tên kênh
-  LINK_KENH: 9,  // J: Link kênh
-  NGAY_START: 10, // K: Ngày 1 (D/M/C)
+  LINK_KENH: 10,  // K: Link kênh (fanpage)
+  NGAY_START: 11, // L: Ngày 1 (D/M/C)
   VIEW: 35,      // AJ: Lượng view cao nhất
   VAITRO: 41,    // AP: Vai trò (Trưởng nhóm / Thành viên)
 };
@@ -499,7 +499,7 @@ async function fetchData() {
 
     // Fallback: columns 10-17 are day columns
     if (DAY_COLS.length === 0) {
-      for (let i = 10; i <= 17; i++) {
+      for (let i = 11; i <= 18; i++) {
         if (i < HEADER_ROW.length) DAY_COLS.push(i);
       }
     }
