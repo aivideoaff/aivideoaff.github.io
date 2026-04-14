@@ -33,7 +33,7 @@ a{color:inherit;text-decoration:none}
 .nav-links a:hover,.nav-links a.active{color:var(--brown)}
 .nav-login{background:var(--ink);color:var(--white);padding:10px 24px;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;border-radius:4px;transition:all .3s}
 .nav-login:hover{background:var(--brown)}
-@media(max-width:768px){.nav-links{display:none}.nav-inner{padding:12px 20px}}
+@media(max-width:768px){.nav-links{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(12,11,10,0.97);flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:300}.nav-links.open{display:flex}.nav-links a{font-size:16px;color:#e7e3dd}.nav-login{margin-top:8px}.nav-inner{padding:12px 20px}.hamburger{display:flex;flex-direction:column;gap:5px;cursor:pointer;z-index:301;padding:8px}.hamburger span{display:block;width:24px;height:2px;background:var(--ink);transition:all .3s}.hamburger.open span:nth-child(1){transform:rotate(45deg) translate(5px,5px)}.hamburger.open span:nth-child(2){opacity:0}.hamburger.open span:nth-child(3){transform:rotate(-45deg) translate(5px,-5px)}}@media(min-width:769px){.hamburger{display:none}}
 
 .page-hero{padding:130px 32px 60px;text-align:center}
 .hero-label{font-size:12px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--brown);margin-bottom:16px}
@@ -57,23 +57,30 @@ a{color:inherit;text-decoration:none}
 .featured-name{font-size:15px;font-weight:700;color:var(--brown);margin-top:20px}
 .featured-role{font-size:13px;color:var(--text-sub)}
 
-/* STORY CARDS - large photo */
+/* STORY CARDS - 3 per row, photo top text bottom */
 .stories-section{padding:80px 32px;max-width:1100px;margin:0 auto}
 .stories-label{font-size:12px;font-weight:700;letter-spacing:5px;text-transform:uppercase;color:var(--brown);margin-bottom:12px}
 .stories-title{font-family:'Playfair Display',serif;font-size:clamp(24px,3.5vw,36px);font-weight:900;margin-bottom:40px}
 
-.story-card{display:grid;grid-template-columns:1fr 1fr;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:24px;transition:all .3s}
-.story-card:hover{box-shadow:0 4px 24px rgba(0,0,0,0.06)}
-.story-card:nth-child(even){direction:rtl}
-.story-card:nth-child(even)>*{direction:ltr}
-@media(max-width:800px){.story-card,.story-card:nth-child(even){grid-template-columns:1fr;direction:ltr}}
+.stories-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+@media(max-width:900px){.stories-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.stories-grid{grid-template-columns:1fr}}
 
-.story-img{min-height:300px;background:var(--bg3);position:relative;overflow:hidden}
+.story-card{display:flex;flex-direction:column;background:var(--white);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:all .3s}
+.story-card:hover{box-shadow:0 4px 24px rgba(0,0,0,0.06)}
+
+.story-img{height:200px;background:var(--bg3);position:relative;overflow:hidden;flex-shrink:0}
 .story-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
 .story-img-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a1510,#2a2018);position:absolute;inset:0}
-.story-img-placeholder span{font-family:'Playfair Display',serif;font-size:64px;font-weight:900;color:var(--brown);opacity:0.15}
+.story-img-placeholder span{font-family:'Playfair Display',serif;font-size:48px;font-weight:900;color:var(--brown);opacity:0.15}
 
-.story-body{padding:36px 32px;display:flex;flex-direction:column;justify-content:center}
+.story-body{padding:24px 20px;display:flex;flex-direction:column;flex:1}
+.story-phase{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--brown);margin-bottom:8px}
+.story-before{font-size:13px;color:var(--text-sub);line-height:1.6;padding-bottom:10px;margin-bottom:10px;border-bottom:1px solid var(--border)}
+.story-after{font-size:13px;color:var(--ink);line-height:1.6;margin-bottom:12px}
+.story-quote{font-family:'Playfair Display',serif;font-size:15px;font-style:italic;color:var(--brown);line-height:1.45;padding-left:12px;border-left:3px solid var(--brown);margin-bottom:14px}
+.story-name{font-size:14px;font-weight:700;color:var(--ink);margin-top:auto}
+.story-role{font-size:12px;color:var(--text-sub)}
 .story-phase{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--brown);margin-bottom:12px}
 .story-before{font-size:14px;color:var(--text-sub);line-height:1.65;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--border)}
 .story-after{font-size:15px;color:var(--ink);line-height:1.7;margin-bottom:16px}
@@ -133,12 +140,13 @@ a{color:inherit;text-decoration:none}
       <div class="logo-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L20 7.5V16.5L12 21L4 16.5V7.5L12 3Z" stroke="#e7e3dd" stroke-width="1.5"/><circle cx="12" cy="12" r="3" fill="#e7e3dd" opacity="0.6"/></svg></div>
       <div class="logo-text">Cộng đồng<br><span>AI Video Affiliate</span></div>
     </a>
-    <div class="nav-links">
+    <div class="nav-links" id="navLinks">
       <a href="/cong-dong/">Trang chủ</a>
       <a href="/cong-dong/bang-xep-hang/">Bảng xếp hạng</a>
       <a href="/cong-dong/cau-chuyen/" class="active">Câu chuyện thành công</a>
       <a href="#cta" class="nav-login">Đăng ký</a>
     </div>
+    <div class="hamburger" id="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
   </div>
 </nav>
 
@@ -175,6 +183,8 @@ a{color:inherit;text-decoration:none}
 
   <div class="stories-label reveal">Tất cả câu chuyện</div>
   <div class="stories-title reveal">Mỗi người một hoàn cảnh, cùng một kết quả</div>
+
+  <div class="stories-grid">
 
   <!-- ========== STORY 1: DUYÊN ========== -->
   <div class="story-card reveal">
@@ -239,6 +249,8 @@ a{color:inherit;text-decoration:none}
       <div class="story-role">Kỹ thuật viên · K003 · 7 video xu hướng</div>
     </div>
   </div>
+
+  </div><!-- end stories-grid -->
 
   <!--
   ╔══════════════════════════════════════════════════════════╗
@@ -334,6 +346,9 @@ a{color:inherit;text-decoration:none}
 <script>
 const obs = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis') }) }, { threshold: .08 });
 document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+function toggleMenu(){document.getElementById('navLinks').classList.toggle('open');document.getElementById('hamburger').classList.toggle('open')}
+function closeMenu(){document.getElementById('navLinks').classList.remove('open');document.getElementById('hamburger').classList.remove('open')}
+document.querySelectorAll('.nav-links a').forEach(a=>a.addEventListener('click',closeMenu));
 </script>
 </body>
 </html>
